@@ -24,10 +24,113 @@ var OP_SET_VX_TO_RAND = 22;
 var OP_WRAP_SPRITE_AROUND_SCREEN = 23;
 var OP_SKIP_IF_KEY_VX_PRESSED = 24;
 var OP_SKIP_IF_KEY_VX_NOT_PRESSED = 25;
+var OP_SET_VX_TO_DELAY = 26;
+var OP_WAIT_AND_SAVE_KEY_IN_VX = 27;
+var OP_DELAY_TO_VX = 28;
+var OP_SOUND_TO_VX = 29;
+var OP_ADD_VX_TO_I = 30;
+var OP_SET_I_TO_CHAR_SPRITE_IN_VX = 31;
+var OP_STORE_DEC_REP_IN_I = 32;
+var OP_SAVE_V_REGISTERS_ADD_I = 33;
+var OP_RESTORE_V_REGISTERS_FROM_I = 34;
 
 function Chip8CPU(){
-
+  this.mem = new Chip8Mem();
+  this.mem.init();
 }
+
+Chip8CPU.prototype.getMem = function() {
+  return this.mem;
+};
+
+// OP 8
+Chip8CPU.prototype.opSetVX = function(code) {
+  var value = code % 0x0100;
+  var regNum = (code & 0x0F00) >> 8;
+
+  this.mem.writeV(regNum, value);
+};
+
+// OP 9
+Chip8CPU.prototype.opAddToVX = function(code) {
+  var value = code % 0x0100;
+  var regNum = (code & 0x0F00) >> 8;
+
+  this.mem.writeV(regNum, this.mem.readV(regNum) + value);
+};
+
+// OP 10
+Chip8CPU.prototype.opSetVXtoVY = function(code) {
+  var regX = (code & 0x0F00) >> 8;
+  var regY = (code & 0x00F0) >> 4;
+  var value = this.mem.readV(regY);
+
+  this.mem.writeV(regX, value);
+};
+
+// OP 11
+Chip8CPU.prototype.opSetVXtoVXorVY = function(code) {
+  var regX = (code & 0x0F00) >> 8;
+  var regY = (code & 0x00F0) >> 4;
+  var valueX = this.mem.readV(regX);
+  var valueY = this.mem.readV(regY);
+
+  this.mem.writeV(regX, valueX | valueY);
+};
+
+// OP 12
+Chip8CPU.prototype.opSetVXtoVXandVY = function(code) {
+  var regX = (code & 0x0F00) >> 8;
+  var regY = (code & 0x00F0) >> 4;
+  var valueX = this.mem.readV(regX);
+  var valueY = this.mem.readV(regY);
+
+  this.mem.writeV(regX, valueX & valueY);
+};
+
+// OP 13
+Chip8CPU.prototype.opSetVXtoVXxorVY = function(code) {
+  var regX = (code & 0x0F00) >> 8;
+  var regY = (code & 0x00F0) >> 4;
+  var valueX = this.mem.readV(regX);
+  var valueY = this.mem.readV(regY);
+
+  this.mem.writeV(regX, valueX ^ valueY);
+};
+
+// OP 20
+Chip8CPU.prototype.opSetI = function(code) {
+  var value = code - 0xA000;
+  this.mem.writeI(value);
+};
+
+// OP 30
+Chip8CPU.prototype.opAddVXtoI = function(code) {
+  var regX = (code & 0x0F00) >> 8;
+  this.mem.writeI(this.mem.readI() + this.mem.readV(regX));
+};
+
+// OP 33
+Chip8CPU.prototype.opSaveVRegistersToI = function(code) {
+  var regX = (code & 0x0F00) >> 8;
+  var startAddress = this.mem.readI();
+
+  for (var i = 0; i <= regX; i++){
+    var value = this.mem.readV(i);
+    this.mem.writeMem(startAddress + i, value);
+  }
+};
+
+// OP 34
+Chip8CPU.prototype.opRestoreVRegistersFromI = function(code) {
+  var regX = (code & 0x0F00) >> 8;
+  var startAddress = this.mem.readI();
+
+  for (var i = 0; i <= regX; i++){
+    var value = this.mem.readMem(startAddress + i);
+    this.mem.writeV(i, value);
+  }
+};
 
 Chip8CPU.prototype.decodeOPCode = function(code) {
   if (code == 0x00E0){
@@ -104,6 +207,27 @@ Chip8CPU.prototype.decodeOPCode = function(code) {
     } else {
       return OP_SKIP_IF_KEY_VX_NOT_PRESSED;
     }
-
+  }
+  if (code >= 0xF000 && code <= 0xFFFF){
+    switch(code % 0x0100) {
+    case 0x007:
+        return OP_SET_VX_TO_DELAY;
+    case 0x00A:
+        return OP_WAIT_AND_SAVE_KEY_IN_VX;
+    case 0x015:
+        return OP_DELAY_TO_VX;
+    case 0x018:
+        return OP_SOUND_TO_VX;
+    case 0x01E:
+        return OP_ADD_VX_TO_I;
+    case 0x029:
+        return OP_SET_I_TO_CHAR_SPRITE_IN_VX;
+    case 0x033:
+        return OP_STORE_DEC_REP_IN_I;
+    case 0x055:
+        return OP_SAVE_V_REGISTERS_ADD_I;
+    case 0x065:
+        return OP_RESTORE_V_REGISTERS_FROM_I;
+    }
   }
 };
