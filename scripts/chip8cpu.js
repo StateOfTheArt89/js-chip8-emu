@@ -37,10 +37,59 @@ var OP_RESTORE_V_REGISTERS_FROM_I = 34;
 function Chip8CPU(){
   this.mem = new Chip8Mem();
   this.mem.init();
+
+  this.screen = new Chip8Screen();
+  this.screen.init();
 }
 
 Chip8CPU.prototype.getMem = function() {
   return this.mem;
+};
+
+Chip8CPU.prototype.getScreen = function() {
+  return this.screen;
+};
+
+// OP 3 opJumpTo
+Chip8CPU.prototype.opJumpTo = function(code) {
+  var address = code & 0x0FFF;
+  this.mem.writePc(address);
+};
+
+// OP 4
+Chip8CPU.prototype.opCallSubAt = function(code) {
+  var address = code & 0x0FFF;
+  this.mem.pushOnStack(this.mem.readPc());
+  this.mem.writePc(address);
+};
+
+// OP 5
+Chip8CPU.prototype.opSkipIfVXEquals = function(code) {
+  var value = code % 0x0100;
+  var regNum = (code & 0x0F00) >> 8;
+  if (value == this.mem.readV(regNum)){
+    this.mem.writePc(this.mem.readPc() + 0x2);
+  }
+};
+
+// OP 6 opSkipIfVXNotEquals
+Chip8CPU.prototype.opSkipIfVXNotEquals = function(code) {
+  var value = code % 0x0100;
+  var regNum = (code & 0x0F00) >> 8;
+  if (value != this.mem.readV(regNum)){
+    this.mem.writePc(this.mem.readPc() + 0x2);
+  }
+
+};
+
+// OP 7
+Chip8CPU.prototype.opSkipIfVXEqualsVY = function(code) {
+  var regX = (code & 0x0F00) >> 8;
+  var regY = (code & 0x00F0) >> 4;
+  if (this.mem.readV(regX) == this.mem.readV(regY)){
+    this.mem.writePc(this.mem.readPc() + 0x2);
+  }
+
 };
 
 // OP 8
@@ -102,6 +151,11 @@ Chip8CPU.prototype.opSetVXtoVXxorVY = function(code) {
 Chip8CPU.prototype.opSetI = function(code) {
   var value = code - 0xA000;
   this.mem.writeI(value);
+};
+
+// OP 23
+Chip8CPU.prototype.opDrawSpriteAt = function(code) {
+  // todo
 };
 
 // OP 30
