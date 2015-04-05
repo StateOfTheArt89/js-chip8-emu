@@ -19,3 +19,7 @@ Chip8Screen.prototype.readPixel = function(x,y) {
 Chip8Screen.prototype.writePixel = function(x,y,value) {
   this.gfx[x][y] = value;
 };
+
+Chip8Screen.prototype.drawRowFromByte = function(x,y,value) {
+  
+}

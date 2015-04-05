@@ -19,4 +19,12 @@ describe('Chip 8 Screen', function() {
     expect(chip8screen.readPixel(3,3)).toEqual(0x1);
   });
 
+  it('writes row from byte into memory', function() {
+    chip8screen.drawRowFromByte(0,3,0xAA); // o o o o
+    expect(chip8screen.readPixel(0,3)).toEqual(0x1);
+    expect(chip8screen.readPixel(1,3)).toEqual(0x0);
+    expect(chip8screen.readPixel(2,3)).toEqual(0x1);
+    expect(chip8screen.readPixel(8,3)).toEqual(0x0);
+  });
+
 });
