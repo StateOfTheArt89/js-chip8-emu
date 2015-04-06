@@ -232,6 +232,12 @@ Chip8CPU.prototype.opSetI = function(code) {
   this.mem.writeI(value);
 };
 
+// OP 21
+Chip8CPU.prototype.opSetJumpToAddrPlusV0 = function(code) {
+  var value = code & 0x0FFF;
+  this.mem.writePc(this.mem.readV(0) + value);
+};
+
 // OP 23
 Chip8CPU.prototype.opDrawSpriteAt = function(code) {
   var regX = (code & 0x0F00) >> 8;
