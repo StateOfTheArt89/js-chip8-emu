@@ -11,6 +11,11 @@ describe('Chip 8 Memory', function() {
     expect(chip8mem.readMem(4090)).toEqual(0x00);
   });
 
+  it('initializes registers', function() {
+    expect(chip8mem.readPc()).toEqual(0x200);
+    expect(chip8mem.readI()).toEqual(0x00);
+  });
+
   it('saves values in memory (write/read)', function() {
     chip8mem.writeMem(200, 0xFF);
     expect(chip8mem.readMem(200)).toEqual(0xFF);

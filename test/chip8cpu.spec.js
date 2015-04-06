@@ -9,6 +9,18 @@ describe('Chip 8 CPU', function() {
     chip8screen = chip8cpu.getScreen();
   });
 
+  it('executes op 1: clear screen', function() {
+    chip8cpu.opClearScreen(0x00E0);
+    expect(chip8screen.readPixel(0,0)).toEqual(0x0);
+    expect(chip8screen.readPixel(5,5)).toEqual(0x0);
+  });
+
+  it('executes op 2: return from subroutine', function() {
+    chip8mem.pushOnStack(0x123);
+    chip8cpu.opReturnFromSub(0x00EE);
+    expect(chip8mem.readPc()).toEqual(0x123);
+  });
+
   it('executes op 3: jump to address nnn', function() {
     chip8mem.writePc(0x200);
     chip8cpu.opJumpTo(0x1333);
@@ -101,9 +113,82 @@ describe('Chip 8 CPU', function() {
     expect(chip8mem.readV(0x1)).toEqual(0xFF);
   });
 
+  it('executes op 14: add vy to vx', function() {
+    chip8mem.writeV(0x1, 2);
+    chip8mem.writeV(0x2, 2);
+    chip8cpu.opAddVYtoVX(0x8124);
+    expect(chip8mem.readV(0x1)).toEqual(4);
+  });
+
+  it('executes op 14: add vy to vx (overflow)', function() {
+    chip8mem.writeV(0x1, 0xFF);
+    chip8mem.writeV(0x2, 0x01);
+    chip8cpu.opAddVYtoVX(0x8124);
+    expect(chip8mem.readV(0x1)).toEqual(0x00);
+    expect(chip8mem.readV(0xF)).toEqual(0x01);
+  });
+
+  it('executes op 15: sub vy from vx', function() {
+    chip8mem.writeV(0x1, 0xFF);
+    chip8mem.writeV(0x2, 0x01);
+    chip8cpu.opSubVYfromVX(0x8125);
+    expect(chip8mem.readV(0x1)).toEqual(0xFE);
+    expect(chip8mem.readV(0xF)).toEqual(0x1);
+  });
+
+  it('executes op 16: shift vx right by one', function() {
+    chip8mem.writeV(0x1, 0x02);
+    chip8cpu.opShiftVXRight(0x8126);
+    expect(chip8mem.readV(0x1)).toEqual(0x01);
+    expect(chip8mem.readV(0xF)).toEqual(0x00);
+  });
+
+  it('executes op 16: shift vx right by one (overflow)', function() {
+    chip8mem.writeV(0x1, 0xFF);
+    chip8cpu.opShiftVXRight(0x8126);
+    expect(chip8mem.readV(0x1)).toEqual(0x7F);
+    expect(chip8mem.readV(0xF)).toEqual(0x01);
+  });
+
+  it('executes op 17: sub vy from vx', function() {
+    chip8mem.writeV(0x1, 0xFF);
+    chip8mem.writeV(0x2, 0xFF);
+    chip8cpu.opSubVXfromVY(0x8127);
+    expect(chip8mem.readV(0x1)).toEqual(0x00);
+    expect(chip8mem.readV(0xF)).toEqual(0x00);
+  });
+
+  it('executes op 18: shift vx left by one', function() {
+    chip8mem.writeV(0x1, 0x01);
+    chip8cpu.opShiftVXLeft(0x812E);
+    expect(chip8mem.readV(0x1)).toEqual(0x02);
+    expect(chip8mem.readV(0xF)).toEqual(0x00);
+  });
+
+  it('executes op 18: shift vx left by one (overflow)', function() {
+    chip8mem.writeV(0x1, 0xFF);
+    chip8cpu.opShiftVXLeft(0x812E);
+    expect(chip8mem.readV(0x1)).toEqual(0xFE);
+    expect(chip8mem.readV(0xF)).toEqual(0x01);
+  });
+
+  it('executes op 19: skip next inst if vx not equals vy', function() {
+    chip8mem.writePc(0x10);
+    chip8mem.writeV(0x1, 0xFF);
+    chip8mem.writeV(0x2, 0xFF);
+    chip8cpu.opSkipIfVXnotEqualsVY(0x9120);
+    expect(chip8mem.readPc()).toEqual(0x12);
+  });
+
   it('executes op 20: set i', function() {
     chip8cpu.opSetI(0xA123);
     expect(chip8mem.readI()).toEqual(0x123);
+  });
+
+  it('executes op 21: jump to location nnn + V0', function() {
+    chip8mem.writeV(0, 0x023);
+    chip8cpu.opSetJumpToAddrPlusV0(0xB100);
+    expect(chip8mem.readPc()).toEqual(0x123);
   });
 
   it('executes op 23: draw sprite at x y', function() {
@@ -111,16 +196,44 @@ describe('Chip 8 CPU', function() {
     chip8mem.writeMem(0x0100, 0xFF); // oooooooo
     chip8mem.writeMem(0x0101, 0x81); // o      o
     chip8mem.writeMem(0x0102, 0xFF); // oooooooo
-    //draw sprite at index at (0,0) with 2 rows
-    chip8cpu.opDrawSpriteAt(0xD002);
+    //draw sprite at index at (0,0) with 3 rows
+    chip8cpu.opDrawSpriteAt(0xD003);
     expect(chip8screen.readPixel(0,0)).toEqual(0x1);
-    expect(chip8screen.readPixel(0,7)).toEqual(0x1);
-    expect(chip8screen.readPixel(1,0)).toEqual(0x1);
+    expect(chip8screen.readPixel(7,0)).toEqual(0x1);
+    expect(chip8screen.readPixel(0,1)).toEqual(0x1);
     expect(chip8screen.readPixel(1,1)).toEqual(0x0);
-    expect(chip8screen.readPixel(1,2)).toEqual(0x0);
-    expect(chip8screen.readPixel(2,0)).toEqual(0x1);
-    expect(chip8screen.readPixel(2,7)).toEqual(0x1);
-    expect(chip8screen.readPixel(2,8)).toEqual(0x0);
+    expect(chip8screen.readPixel(2,1)).toEqual(0x0);
+    expect(chip8screen.readPixel(0,2)).toEqual(0x1);
+    expect(chip8screen.readPixel(7,2)).toEqual(0x1);
+    expect(chip8screen.readPixel(8,2)).toEqual(0x0);
+  });
+
+  it('executes op 23: draw sprite at x y (set vf flag)', function() {
+    chip8mem.writeV(0xF,0x00);
+    chip8mem.writeI(0x0200);
+    chip8mem.writeMem(0x0200, 0xFF); // oooooooo
+    chip8screen.writePixel(3,0,0x1);
+    //draw sprite at index at (0,0) with 1 rows
+    chip8cpu.opDrawSpriteAt(0xD001);
+    expect(chip8mem.readV(0xF)).toEqual(0x01);
+  });
+
+  it('executes op 23: draw sprite at x y (drawing acts as xor)', function() {
+    chip8mem.writeI(0x0100);
+    chip8mem.writeMem(0x0100, 0xFF); // oooooooo
+    chip8mem.writeMem(0x0101, 0x81); // o      o
+    chip8mem.writeMem(0x0102, 0xFF); // oooooooo
+    //draw sprite at index at (0,0) with 3 rows
+    chip8cpu.opDrawSpriteAt(0xD003);
+    chip8cpu.opDrawSpriteAt(0xD003);
+    expect(chip8screen.readPixel(0,0)).toEqual(0x0);
+    expect(chip8screen.readPixel(7,0)).toEqual(0x0);
+    expect(chip8screen.readPixel(0,1)).toEqual(0x0);
+    expect(chip8screen.readPixel(1,1)).toEqual(0x0);
+    expect(chip8screen.readPixel(2,1)).toEqual(0x0);
+    expect(chip8screen.readPixel(0,2)).toEqual(0x0);
+    expect(chip8screen.readPixel(7,2)).toEqual(0x0);
+    expect(chip8screen.readPixel(8,2)).toEqual(0x0);
   });
 
   it('executes op 30: add vx to i', function() {

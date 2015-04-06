@@ -20,6 +20,18 @@ Chip8Screen.prototype.writePixel = function(x,y,value) {
   this.gfx[x][y] = value;
 };
 
-Chip8Screen.prototype.drawRowFromByte = function(x,y,value) {
-  
-}
+Chip8Screen.prototype.drawRowFromByte = function(xStart,y,value) {
+  var overdrawn = false;
+  for (var i = 0; i < 8; i++) {
+    var bitMask = 0x80 >> i;
+    var pixelValue = (value & bitMask) >> (7 - i);
+
+    var currentPixelValue = this.readPixel(xStart + i, y);
+    if (currentPixelValue == 0x1 && pixelValue == 0x1){
+      overdrawn = true;
+    }
+    this.writePixel(xStart + i, y, currentPixelValue ^ pixelValue);
+  }
+
+  return overdrawn;
+};

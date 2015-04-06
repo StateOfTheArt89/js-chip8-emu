@@ -2,13 +2,14 @@ function Chip8Mem() {
   this.memory = new Array(4096);
   this.V = new Array(16);
   this.I = 0x00; //index pointer
-  this.pc = 0x00; //program counter
+  this.pc = 0x200; //program counter
   this.stack = new Array(16);
   this.sp = 0; //stack pointer
 }
 
 Chip8Mem.prototype.init = function() {
   this.sp = 0x00;
+  this.pc = 0x200;
 
   for (var i=0; i < 4096;i++)
   {
