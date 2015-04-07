@@ -40,6 +40,9 @@ function Chip8CPU(){
 
   this.screen = new Chip8Screen();
   this.screen.init();
+
+  this.timers = new Chip8Timers();
+  this.timers.init();
 }
 
 Chip8CPU.prototype.getMem = function() {
@@ -48,6 +51,60 @@ Chip8CPU.prototype.getMem = function() {
 
 Chip8CPU.prototype.getScreen = function() {
   return this.screen;
+};
+
+Chip8CPU.prototype.getTimers = function() {
+  return this.timers;
+};
+
+Chip8CPU.prototype.getOpFunction = function(code) {
+  var opNum = this.decodeOPCode(code);
+  var functionMap = [null,
+                    this.opClearScreen,
+                    this.opReturnFromSub,
+                    this.opJumpTo,
+                    this.opCallSubAt,
+                    this.opSkipIfVXEquals,
+                    this.opSkipIfVXNotEquals,
+                    this.opSkipIfVXEqualsVY,
+                    this.opSetVX,
+                    this.opAddToVX,
+                    this.opSetVXtoVY,
+                    this.opSetVXtoVXorVY,
+                    this.opSetVXtoVXandVY,
+                    this.opSetVXtoVXxorVY,
+                    this.opAddVYtoVX,
+                    this.opSubVYfromVX,
+                    this.opShiftVXRight,
+                    this.opSubVXfromVY,
+                    this.opShiftVXLeft,
+                    this.opSkipIfVXnotEqualsVY,
+                    this.opSetI,
+                    this.opSetJumpToAddrPlusV0,
+                    null,
+                    this.opDrawSpriteAt,
+                    null,
+                    null,
+                    this.opSetVXToDelayTimer,
+                    null,
+                    null,
+                    this.opSetDelayTimerToVX,
+                    this.opSetSoundTimerToVX,
+                    this.opAddVXtoI,
+                    null,
+                    null,
+                    this.opSaveVRegistersToI,
+                    this.opRestoreVRegistersFromI];
+
+  return functionMap[opNum];
+};
+
+Chip8CPU.prototype.executeNext = function() {
+  var currentOpCode = this.mem.readCurrentOpCode();
+
+  var selectedFunction = this.getOpFunction(currentOpCode).bind(this);
+  selectedFunction(currentOpCode);
+  this.mem.writePc(this.mem.readPc()+2);
 };
 
 // OP 1
@@ -82,7 +139,7 @@ Chip8CPU.prototype.opSkipIfVXEquals = function(code) {
   }
 };
 
-// OP 6 opSkipIfVXNotEquals
+// OP 6
 Chip8CPU.prototype.opSkipIfVXNotEquals = function(code) {
   var value = code % 0x0100;
   var regNum = (code & 0x0F00) >> 8;
@@ -252,6 +309,24 @@ Chip8CPU.prototype.opDrawSpriteAt = function(code) {
       this.mem.writeV(0xF,0x1);
     }
   }
+};
+
+// OP 26
+Chip8CPU.prototype.opSetVXToDelayTimer = function(code) {
+  var regX = (code & 0x0F00) >> 8;
+  this.mem.writeV(regX, this.timers.readDelayTimerValue());
+};
+
+// OP 28
+Chip8CPU.prototype.opSetDelayTimerToVX = function(code) {
+  var regX = (code & 0x0F00) >> 8;
+  this.timers.writeDelayTimerValue(this.mem.readV(regX));
+};
+
+// OP 29
+Chip8CPU.prototype.opSetSoundTimerToVX = function(code) {
+  var regX = (code & 0x0F00) >> 8;
+  this.timers.writeSoundTimerValue(this.mem.readV(regX));
 };
 
 // OP 30

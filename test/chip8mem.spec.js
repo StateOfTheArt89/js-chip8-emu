@@ -50,5 +50,12 @@ describe('Chip 8 Memory', function() {
     expect(chip8mem.readMem(0x202)).toEqual(0x03);
   });
 
+  it('creates current op code from memory', function() {
+    chip8mem.writeMem(0x200, 0x12);
+    chip8mem.writeMem(0x201, 0x34);
+    chip8mem.writePc(0x200);
+    expect(chip8mem.readCurrentOpCode()).toEqual(0x1234);
+  });
+
 
 });

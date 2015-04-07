@@ -2,11 +2,33 @@ describe('Chip 8 CPU', function() {
   var chip8;
   var chip8mem;
   var chip8screen;
+  var chip8timers;
 
   beforeEach(function() {
     chip8cpu = new Chip8CPU();
     chip8mem = chip8cpu.getMem();
     chip8screen = chip8cpu.getScreen();
+    chip8timers = chip8cpu.getTimers();
+  });
+
+  it('returns op function from op code', function() {
+    expect(chip8cpu.getOpFunction(0x00E0)).toEqual(chip8cpu.opClearScreen);
+    expect(chip8cpu.getOpFunction(0x7E10)).toEqual(chip8cpu.opAddToVX);
+  });
+
+  it('executes next operation', function() {
+    chip8mem.writePc(0x200);
+    chip8mem.writeMem(0x200, 0x60);
+    chip8mem.writeMem(0x201, 0x42); // Set V0 to 0x42
+    chip8mem.writeMem(0x202, 0x70);
+    chip8mem.writeMem(0x203, 0x01); // Add 1 to V0 0x7201
+    chip8mem.writeMem(0x204, 0x70);
+    chip8mem.writeMem(0x205, 0x01); // Add 1 to V0 0x7201
+    chip8cpu.executeNext();
+    chip8cpu.executeNext();
+    chip8cpu.executeNext();
+
+    expect(chip8mem.readV(0x0)).toEqual(0x44);
   });
 
   it('executes op 1: clear screen', function() {
@@ -234,6 +256,24 @@ describe('Chip 8 CPU', function() {
     expect(chip8screen.readPixel(0,2)).toEqual(0x0);
     expect(chip8screen.readPixel(7,2)).toEqual(0x0);
     expect(chip8screen.readPixel(8,2)).toEqual(0x0);
+  });
+
+  it('executes op 26: set vx to delay timer', function() {
+    chip8timers.writeDelayTimerValue(0x11);
+    chip8cpu.opSetVXToDelayTimer(0xF107);
+    expect(chip8mem.readV(0x1)).toEqual(0x11);
+  });
+
+  it('executes op 28: set delay timer to vx', function() {
+    chip8mem.writeV(0x1, 0x42);
+    chip8cpu.opSetDelayTimerToVX(0xF115);
+    expect(chip8timers.readDelayTimerValue()).toEqual(0x42);
+  });
+
+  it('executes op 29: set sound timer to vx', function() {
+    chip8mem.writeV(0x1, 0x42);
+    chip8cpu.opSetSoundTimerToVX(0xF118);
+    expect(chip8timers.readSoundTimerValue()).toEqual(0x42);
   });
 
   it('executes op 30: add vx to i', function() {

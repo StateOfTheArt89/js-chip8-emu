@@ -71,3 +71,9 @@ Chip8Mem.prototype.popStack = function(value) {
   this.sp--;
   return this.stack[this.sp];
 };
+
+Chip8Mem.prototype.readCurrentOpCode = function(){
+  var currentOpCode = this.readMem(this.readPc()) << 8;
+  currentOpCode += this.readMem(this.readPc()+1);
+  return currentOpCode;
+};
