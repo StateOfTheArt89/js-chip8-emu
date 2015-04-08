@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chip 8 Emulator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="/bower_components/jquery/dist/jquery.js"></script>
+  <script src="/scripts/chip8cpu.js"></script>
+  <script src="/scripts/chip8mem.js"></script>
+  <script src="/scripts/chip8screen.js"></script>
+  <script src="/scripts/chip8timers.js"></script>
+  <script src="/scripts/chip8keyboard.js"></script>
+
+  <script src="/script.js"></script>
+
+  <link rel="stylesheet" type="text/css" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
+
+</head>
+<body>
+
+  <div class="container text-center">
+    <h1>Chip8 Emulator</h1>
+    <div>
+      <canvas id="canvas" class="text-center"></canvas>
+    </div>
+
+    <input id="fileinput" type="file" onchange="loadFile()"/>
+  </div>
+
+
+  <script>
+    var c=document.getElementById("canvas");
+    var ctx=c.getContext("2d");
+    var bswitch = false;
+    for (var x=0; x<64;x++){
+     for (var y=0; y<32;y++){
+        ctx.fillRect(x*5,y*5,4,4);
+        if (bswitch){
+          ctx.fillStyle="#000000";
+          bswitch = false;
+        } else {
+          ctx.fillStyle="#DDDDDD";
+          bswitch = true;
+        }
+
+     }
+   }
+  </script>
+</body>
+</html>

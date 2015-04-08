@@ -57,5 +57,13 @@ describe('Chip 8 Memory', function() {
     expect(chip8mem.readCurrentOpCode()).toEqual(0x1234);
   });
 
+  it('initializes font set into memory', function() {
+    expect(chip8mem.readMem(0x20)).toEqual(0xF0);
+    expect(chip8mem.readMem(0x21)).toEqual(0x90);
+    expect(chip8mem.readMem(0x22)).toEqual(0x90);
+    expect(chip8mem.readMem(0x23)).toEqual(0x90);
+    expect(chip8mem.readMem(0x24)).toEqual(0xF0);
+  });
+
 
 });

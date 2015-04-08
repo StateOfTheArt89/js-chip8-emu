@@ -1,11 +1,14 @@
+var SCREEN_HEIGHT = 32;
+var SCREEN_WIDTH = 64
+
 function Chip8Screen(){
-  this.gfx = new Array(64);
+  this.gfx = new Array(SCREEN_WIDTH);
 }
 
 Chip8Screen.prototype.init = function() {
-  this.gfx = new Array(64);
+  this.gfx = new Array(SCREEN_WIDTH);
   for (var x = 0; x < this.gfx.length; x++) {
-    this.gfx[x] = new Array(32);
+    this.gfx[x] = new Array(SCREEN_HEIGHT);
     for (var y = 0; y < this.gfx[x].length; y++) {
       this.gfx[x][y] = 0x0;
     }
@@ -13,10 +16,17 @@ Chip8Screen.prototype.init = function() {
 };
 
 Chip8Screen.prototype.readPixel = function(x,y) {
+  x = x % SCREEN_WIDTH;
+  y = y % SCREEN_HEIGHT;
+  if (x > SCREEN_WIDTH || y > SCREEN_HEIGHT){
+    return;
+  }
   return this.gfx[x][y];
 };
 
 Chip8Screen.prototype.writePixel = function(x,y,value) {
+  x = x % SCREEN_WIDTH;
+  y = y % SCREEN_HEIGHT;
   this.gfx[x][y] = value;
 };
 

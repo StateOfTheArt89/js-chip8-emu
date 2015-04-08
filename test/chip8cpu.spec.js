@@ -3,12 +3,14 @@ describe('Chip 8 CPU', function() {
   var chip8mem;
   var chip8screen;
   var chip8timers;
+  var chip8keyboard;
 
   beforeEach(function() {
     chip8cpu = new Chip8CPU();
     chip8mem = chip8cpu.getMem();
     chip8screen = chip8cpu.getScreen();
     chip8timers = chip8cpu.getTimers();
+    chip8keyboard = chip8cpu.getKeyboard();
   });
 
   it('returns op function from op code', function() {
@@ -173,11 +175,11 @@ describe('Chip 8 CPU', function() {
   });
 
   it('executes op 17: sub vy from vx', function() {
-    chip8mem.writeV(0x1, 0xFF);
+    chip8mem.writeV(0x1, 0x0F);
     chip8mem.writeV(0x2, 0xFF);
     chip8cpu.opSubVXfromVY(0x8127);
-    expect(chip8mem.readV(0x1)).toEqual(0x00);
-    expect(chip8mem.readV(0xF)).toEqual(0x00);
+    expect(chip8mem.readV(0x1)).toEqual(0xF0);
+    expect(chip8mem.readV(0xF)).toEqual(0x01);
   });
 
   it('executes op 18: shift vx left by one', function() {
@@ -211,6 +213,12 @@ describe('Chip 8 CPU', function() {
     chip8mem.writeV(0, 0x023);
     chip8cpu.opSetJumpToAddrPlusV0(0xB100);
     expect(chip8mem.readPc()).toEqual(0x123);
+  });
+
+  it('executes op 22: set vx to random nn', function() {
+    chip8mem.writeV(0x1,-1);
+    chip8cpu.opSetVXToRandom(0xC1FF);
+    expect(chip8mem.readV(0x1)).toBeGreaterThan(-1);
   });
 
   it('executes op 23: draw sprite at x y', function() {
@@ -258,10 +266,42 @@ describe('Chip 8 CPU', function() {
     expect(chip8screen.readPixel(8,2)).toEqual(0x0);
   });
 
+  it('executes op 24: skip next if key vx is pressed', function() {
+    chip8mem.writePc(0x200);
+    chip8mem.writeV(0x1,0x1);
+    chip8keyboard.keyDown(0x1);
+    chip8cpu.opSkipIfKeyVXPressed(0xE19E);
+    expect(chip8mem.readPc()).toEqual(0x202);
+  });
+
+  it('executes op 25: skip next if key vx is not pressed', function() {
+    chip8mem.writePc(0x200);
+    chip8mem.writeV(0x1,0x1);
+    chip8keyboard.keyDown(0x1);
+    chip8cpu.opSkipIfKeyVXNotPressed(0xE1A1);
+    expect(chip8mem.readPc()).toEqual(0x200);
+
+    chip8mem.writePc(0x200);
+    chip8mem.writeV(0x1,0x1);
+    chip8keyboard.keyUp(0x1);
+    chip8cpu.opSkipIfKeyVXNotPressed(0xE1A1);
+    expect(chip8mem.readPc()).toEqual(0x202);
+  });
+
   it('executes op 26: set vx to delay timer', function() {
     chip8timers.writeDelayTimerValue(0x11);
     chip8cpu.opSetVXToDelayTimer(0xF107);
     expect(chip8mem.readV(0x1)).toEqual(0x11);
+  });
+
+  it('executes op 27: wait for key press (store in vx)', function() {
+    chip8mem.writePc(0x204);
+    chip8cpu.opWaitForKeyPress(0xF10A);
+    chip8cpu.opWaitForKeyPress(0xF10A);
+    expect(chip8mem.readPc()).toEqual(0x200);
+    chip8keyboard.keyDown(0x1);
+    chip8cpu.opWaitForKeyPress(0xF10A);
+    expect(chip8mem.readPc()).toEqual(0x200);
   });
 
   it('executes op 28: set delay timer to vx', function() {
@@ -280,6 +320,22 @@ describe('Chip 8 CPU', function() {
     chip8mem.writeV(0x1, 0x42);
     chip8cpu.opAddVXtoI(0xF11E);
     expect(chip8mem.readI()).toEqual(0x42);
+  });
+
+  it('executes op 31: set i to the location of char in vx', function() {
+    chip8mem.writeV(0x1, 0x00);
+    chip8cpu.opSetIToCharSpriteVX(0xF129);
+    expect(chip8mem.readI()).toEqual(0x20);
+  });
+
+  //fx33 Stores the Binary-coded decimal representation of VX, with the most significant of three digits at the address in I, the middle digit at I plus 1, and the least significant digit at I plus 2. (In other words, take the decimal representation of VX, place the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2.)
+  it('executes op 32: set i decimal represention of vx', function() {
+    chip8mem.writeV(0x1, 0xFF);
+    chip8mem.writeI(0x200);
+    chip8cpu.opSetIDecimalVX(0xF133);
+    expect(chip8mem.readMem(0x200)).toEqual(2);
+    expect(chip8mem.readMem(0x201)).toEqual(5);
+    expect(chip8mem.readMem(0x202)).toEqual(5);
   });
 
   it('executes op 33: save v registers starting at i', function() {

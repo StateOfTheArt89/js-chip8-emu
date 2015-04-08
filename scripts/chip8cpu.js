@@ -43,10 +43,16 @@ function Chip8CPU(){
 
   this.timers = new Chip8Timers();
   this.timers.init();
+
+  this.keyboard = new Chip8Keyboard();
 }
 
 Chip8CPU.prototype.getMem = function() {
   return this.mem;
+};
+
+Chip8CPU.prototype.getKeyboard = function() {
+  return this.keyboard;
 };
 
 Chip8CPU.prototype.getScreen = function() {
@@ -59,41 +65,40 @@ Chip8CPU.prototype.getTimers = function() {
 
 Chip8CPU.prototype.getOpFunction = function(code) {
   var opNum = this.decodeOPCode(code);
-  var functionMap = [null,
-                    this.opClearScreen,
-                    this.opReturnFromSub,
-                    this.opJumpTo,
-                    this.opCallSubAt,
-                    this.opSkipIfVXEquals,
-                    this.opSkipIfVXNotEquals,
-                    this.opSkipIfVXEqualsVY,
-                    this.opSetVX,
-                    this.opAddToVX,
-                    this.opSetVXtoVY,
-                    this.opSetVXtoVXorVY,
-                    this.opSetVXtoVXandVY,
-                    this.opSetVXtoVXxorVY,
-                    this.opAddVYtoVX,
-                    this.opSubVYfromVX,
-                    this.opShiftVXRight,
-                    this.opSubVXfromVY,
-                    this.opShiftVXLeft,
-                    this.opSkipIfVXnotEqualsVY,
-                    this.opSetI,
-                    this.opSetJumpToAddrPlusV0,
-                    null,
-                    this.opDrawSpriteAt,
-                    null,
-                    null,
-                    this.opSetVXToDelayTimer,
-                    null,
-                    null,
-                    this.opSetDelayTimerToVX,
-                    this.opSetSoundTimerToVX,
-                    this.opAddVXtoI,
-                    null,
-                    null,
-                    this.opSaveVRegistersToI,
+  var functionMap = [this.opJumpTo,
+                    this.opClearScreen, // 1
+                    this.opReturnFromSub, // 2
+                    this.opJumpTo, // 3
+                    this.opCallSubAt, // 4
+                    this.opSkipIfVXEquals, // 5
+                    this.opSkipIfVXNotEquals, // 6
+                    this.opSkipIfVXEqualsVY, // 7
+                    this.opSetVX, // 8
+                    this.opAddToVX, // 9
+                    this.opSetVXtoVY, // 10
+                    this.opSetVXtoVXorVY, // 11
+                    this.opSetVXtoVXandVY, // 12
+                    this.opSetVXtoVXxorVY, // 13
+                    this.opAddVYtoVX, // 14
+                    this.opSubVYfromVX, // 15
+                    this.opShiftVXRight, // 16
+                    this.opSubVXfromVY, // 17
+                    this.opShiftVXLeft, // 18
+                    this.opSkipIfVXnotEqualsVY, // 19
+                    this.opSetI, // 20
+                    this.opSetJumpToAddrPlusV0, // 21
+                    this.opSetVXToRandom, // 22
+                    this.opDrawSpriteAt, // 23
+                    this.opSkipIfKeyVXPressed, // 24
+                    this.opSkipIfKeyVXNotPressed, // 25
+                    this.opSetVXToDelayTimer, // 26
+                    this.opWaitForKeyPress, // 27
+                    this.opSetDelayTimerToVX, // 28
+                    this.opSetSoundTimerToVX, // 29
+                    this.opAddVXtoI, // 30
+                    this.opSetIToCharSpriteVX, // 31
+                    this.opSetIDecimalVX, // 32
+                    this.opSaveVRegistersToI, // 33
                     this.opRestoreVRegistersFromI];
 
   return functionMap[opNum];
@@ -299,6 +304,14 @@ Chip8CPU.prototype.opSetJumpToAddrPlusV0 = function(code) {
   this.mem.writePc(this.mem.readV(0) + value);
 };
 
+// OP 22
+Chip8CPU.prototype.opSetVXToRandom = function(code) {
+  var regX = (code & 0x0F00) >> 8;
+  var bitMask = code & 0x00FF;
+  var randNum = Math.floor((Math.random() * 256));
+  this.mem.writeV(regX, randNum & bitMask);
+};
+
 // OP 23
 Chip8CPU.prototype.opDrawSpriteAt = function(code) {
   var regX = (code & 0x0F00) >> 8;
@@ -315,7 +328,38 @@ Chip8CPU.prototype.opDrawSpriteAt = function(code) {
   }
 };
 
+// OP 24
+Chip8CPU.prototype.opSkipIfKeyVXPressed = function(code) {
+  var regX = (code & 0x0F00) >> 8;
+  key = this.mem.readV(regX);
+  if (this.keyboard.isKeyDown(key)){
+    this.mem.writePc(this.mem.readPc() + 2);
+  }
+
+};
+
+// OP 25
+Chip8CPU.prototype.opSkipIfKeyVXNotPressed = function(code) {
+  var regX = (code & 0x0F00) >> 8;
+  key = this.mem.readV(regX);
+  if (!this.keyboard.isKeyDown(key)){
+    this.mem.writePc(this.mem.readPc() + 2);
+  }
+};
+
 // OP 26
+Chip8CPU.prototype.opWaitForKeyPress = function(code) {
+  var regX = (code & 0x0F00) >> 8;
+  key = this.keyboard.getLastKeyPressed();
+  if (key < 0){
+    this.mem.writePc(this.mem.readPc() - 2);
+  } else {
+    this.mem.writeV(regX,key);
+  }
+
+};
+
+// OP 27
 Chip8CPU.prototype.opSetVXToDelayTimer = function(code) {
   var regX = (code & 0x0F00) >> 8;
   this.mem.writeV(regX, this.timers.readDelayTimerValue());
@@ -337,6 +381,28 @@ Chip8CPU.prototype.opSetSoundTimerToVX = function(code) {
 Chip8CPU.prototype.opAddVXtoI = function(code) {
   var regX = (code & 0x0F00) >> 8;
   this.mem.writeI(this.mem.readI() + this.mem.readV(regX));
+};
+
+// OP 31
+Chip8CPU.prototype.opSetIToCharSpriteVX = function(code) {
+  var regX = (code & 0x0F00) >> 8;
+  var valueX = this.mem.readV(regX);
+
+  this.mem.writeI(valueX*5+0x20);
+};
+
+// OP 32
+Chip8CPU.prototype.opSetIDecimalVX = function(code) {
+  var regX = (code & 0x0F00) >> 8;
+  var valueX = this.mem.readV(regX);
+  var startAddress = this.mem.readI();
+
+
+  this.mem.writeMem(startAddress+2, valueX % 10);
+  valueX -= (valueX % 10);
+  this.mem.writeMem(startAddress+1, (valueX % 100)/10);
+  valueX -= (valueX % 100);
+  this.mem.writeMem(startAddress, (valueX % 1000)/100);
 };
 
 // OP 33
