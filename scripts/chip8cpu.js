@@ -102,10 +102,10 @@ Chip8CPU.prototype.getOpFunction = function(code) {
 Chip8CPU.prototype.executeNext = function() {
   var currentOpCode = this.mem.readCurrentOpCode();
 
-  var selectedFunction = this.getOpFunction(currentOpCode).bind(this);
+  var selectedFunction = this.getOpFunction(currentOpCode);
   if (selectedFunction)
   {
-    selectedFunction(currentOpCode);
+    (selectedFunction.bind(this))(currentOpCode);
   }
 
   this.mem.writePc(this.mem.readPc()+2);

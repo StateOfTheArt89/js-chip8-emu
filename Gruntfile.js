@@ -9,8 +9,21 @@ module.exports = function(grunt) {
               specs: 'test/*.spec.js'
           }
           }
-        }
+        },
+
+        connect: {
+
+          server: {
+            options: {
+              keepalive:true,
+              port: 3000,
+              hostname: '*'
+            }
+          }
+  }
+
     });
 
     grunt.loadNpmTasks('grunt-contrib-jasmine');
+    grunt.loadNpmTasks('grunt-contrib-connect');
 };
